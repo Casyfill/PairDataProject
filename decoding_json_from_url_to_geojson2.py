@@ -42,7 +42,7 @@ def collectData(person, Type):
 		elif person == 'philipp':
 			ps = 'PhilippStoryString'
 		
-		def parseMoves(j, person):
+		def parseMoves(j):
 
 
 			# print j
