@@ -4,15 +4,38 @@
 import urllib2
 import json
 import csv
-import pprint
-pp = pprint.PrettyPrinter(indent=4)
+# import pprint
+# pp = pprint.PrettyPrinter(indent=4)
 import sys
 
+'''
+ суммировать точки!!!! - done
+ все в def's - done
+ 4sqr_places_stats - done
+ cities = done
+ venueStats = ?
+ summation - починить
 
-#  суммировать точки!!!!
+ вытащить 4sqr в allFeats из функций (упростить) - done
+ filter bad movements
+ more filters_collectors - для "опозданий на работу, например"
+ optimise placessummarisation
 
-def collectData(person, Type):
+'''
+# чтобы не светить пароли в гите
+def getAcces():
+	path = "/Users/casy/Dropbox (RN&IA'N)/My_Projects/PairDataProject/code/4sqr_access_token.txt"
+	with open(path, 'r') as file:
+		frsqrAcess=file.read().strip()
+		return frsqrAcess
+		file.close()
 
+
+frsqrAcess1= getAcces()
+version = 4
+
+def collectData(person, Type, frsqrAcess):
+	version = 4
 	def parseJsonToString(j):
 		# print j
 		data = json.loads(j)[0]
@@ -106,15 +129,82 @@ def collectData(person, Type):
 
 		return allFeats
 
-	def totalPlaces(List, person):
+	def totalPlaces(List, person, frsqrAcess):
 		if person == 'anna':
 			ps = 'NuraStoryString'
 		elif person == 'philipp':
 			ps = 'PhilippStoryString'
-		
+
+		def frsqrStatAll(List, acces_tocken):
+					url = 'https://api.foursquare.com/v2/venues/categories?oauth_token=%s&v=20140416' % (acces_tocken)
+					catResponse = urllib2.urlopen(url)
+					Answer = catResponse.read()
+					catJson = json.loads(Answer)
+					print 'all cats scraped from 4sqr site!'
+
+					# return catJson
+
+					def frsqrStat(place, acces_tocken, catJson):
+						ID = place['properties']['foursquareId']
+						url = 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s&v=20140416' % (ID, acces_tocken)
+						fsqrResponse = urllib2.urlopen(url)
+						Answer = fsqrResponse.read()
+						venueJson = json.loads(Answer)
+
+						# venueStats = {}
+						try:
+							place['properties']['city'] = venueJson['response']['venue']['location']['city']
+							
+						except:
+							place['properties']['city'] = None
+
+						try:
+							place['properties']['country'] = venueJson['response']['venue']['location']['country']
+						except:
+							place['properties']['country'] = None
+
+
+						try:
+							place['properties']['state'] = venueJson['response']['venue']['location']['state']
+						except:
+							place['properties']['state'] = None
+
+						categoryID = venueJson['response']['venue']['categories'][0]['id']
+						place['properties']['categoryName'] = venueJson['response']['venue']['categories'][0]['name']
+
+						mainCat = {}
+						#  if basic ID
+						for cat in catJson['response']['categories']:
+							if cat['id']==categoryID:
+								mainCat['id']=categoryID
+								mainCat['name']=cat['name']
+								return mainCat	
+						# if not basic (general)
+						for cat in catJson['response']['categories']:
+							catIDs = [c['id'] for c in cat['categories']]
+							for i in xrange(len(catIDs)):
+								if catIDs[i]==categoryID:
+									mainCat['id'] = cat['id']
+									mainCat['name'] = cat['name']
+									break
+						if 'name' not in mainCat.keys():
+							# print categoryID, ' did not found category :( , place: ', place['properties']['name']
+							mainCat['name'] = None
+
+						# venueStats['MainID'] = mainCat['id']
+						place['properties']['MainName'] = mainCat['name']
+
+						return place
+
+					for place in List:
+						if place['properties']['foursquareId']!=None:
+							place = frsqrStat(place, acces_tocken, catJson)
+					return List
+
 
 		def parsePlaces(j):
 			# print j
+			
 			data = json.loads(j)[0]
 			date = data['date']
 			movements = data['segments']
@@ -128,8 +218,6 @@ def collectData(person, Type):
 				for m in movements:
 					if m['type']=='place':
 
-						# pp.pprint(m)
-						# pp.pprint(m)
 						try: 
 							foursquareId = m['place']['foursquareId']
 						except:
@@ -140,7 +228,9 @@ def collectData(person, Type):
 							name = m['place']['name']
 						except:
 							name = 'unknown'
-						# print m['place']
+						
+
+
 						prop = {
 							# 'date': [date],
 							'type': 'place',
@@ -148,11 +238,14 @@ def collectData(person, Type):
 							'foursquareId' : foursquareId,
 							'pType' : m['place']['type'],
 							'name' : name,
+
 							# 'amoung' : 1
 							# 'duration' : (int(m['endTime'])-int(m['startTime'])),
 							# 'endTime' : m['endTime'],
 							# 'startTime' : m['startTime']
 							}
+
+
 						# print prop['name']
 						
 						lat =  m['place']['location']['lat']
@@ -193,7 +286,8 @@ def collectData(person, Type):
 			placeID = '|'.join([place['properties']['name'], str(place['geometry']['coordinates'][0]), str(place['geometry']['coordinates'][1])])
 			place['properties']['amoung'] = tempP[placeID]
 
-		
+		allFeats = frsqrStatAll(allFeats, frsqrAcess)
+
 
 		return allFeats
 
@@ -208,7 +302,7 @@ def collectData(person, Type):
 		url = 'https://premium.scraperwiki.com/eoypwpi/69446f906b4c40f/sql/?q=select%0A%20--%20%20%20%20Time%2C%0A%09--%20Ncyc%2C%0A%20--%20%20%20%20Nwlk%2C%0A%20--%20%20%20%20Nrun%2C%0A%20--%20%20%20%20Ntrs%2C%0A%09--%20NplaceCOunt%2C%0A%20--%20%20%20%20Pcyc%2C%0A%20--%20%20%20%20Pwlk%2C%0A%20--%20%20%20%20Prun%2C%0A%20--%20%20%20%20Ptrs%2C%0A%20--%20%20%20%20PplaceCount%2C%0A%20%20%20%20NuraStoryString%0A%20%20%20%20%0Afrom%20swdata%0A--%20where%20NplaceCOunt%20%3E%20%0Aorder%20by%20Time%20DESC%0A--%20limit%202'
 	elif person == 'philipp':
 		url = 'https://premium.scraperwiki.com/eoypwpi/69446f906b4c40f/sql/?q=select%0A%20%20%20%20PhilippStoryString%0A%20%20%20%20%0Afrom%20swdata%0A--%20where%20NplaceCOunt%20%3E%20%0Aorder%20by%20Time%20DESC%0A--%20limit%202' 
-	out_path = '/Users/casy/Dropbox/My_Projects/PairDataProject/mapping_part/' + person + '_total_moves_weekend2.json' 
+	out_path = '/Users/casy/Dropbox/My_Projects/PairDataProject/mapping_part/' + person + '_' + Type + str(version) +'.json' 
 
 	print 'script started!'
 
@@ -221,7 +315,7 @@ def collectData(person, Type):
 	if Type == 'movements':
 		result = totalMoves(d, person)
 	elif Type == 'places':
-		result = totalPlaces(d, person)
+		result = totalPlaces(d, person, frsqrAcess)
 
 	features = {
 	    'type': 'FeatureCollection',
@@ -239,4 +333,4 @@ def collectData(person, Type):
     		file.close()
     		print 'file ' + out_path.split('/')[-1] +  ' written!'
 
-collectData('philipp', 'movements')
+collectData('philipp', 'places', frsqrAcess1)
