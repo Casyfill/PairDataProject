@@ -7,19 +7,29 @@ import csv
 # import pprint
 # pp = pprint.PrettyPrinter(indent=4)
 import sys
+import cProfile
+# cProfile.run('foo()')
 
 '''
  суммировать точки!!!! - done
  все в def's - done
  4sqr_places_stats - done
  cities = done
- venueStats = ?
- summation - починить
-
+ venueStats - done
  вытащить 4sqr в allFeats из функций (упростить) - done
+ в категориях и суммации - генераторы
+ 
+ summation - починить и упростить
  filter bad movements
  more filters_collectors - для "опозданий на работу, например"
  optimise placessummarisation
+ profiler
+ define sleeping
+ define workPlace
+ define weekend_Place
+
+ define favorite
+ define favoriteFood
 
 '''
 # чтобы не светить пароли в гите
@@ -181,14 +191,19 @@ def collectData(person, Type, frsqrAcess):
 								return mainCat	
 						# if not basic (general)
 						for cat in catJson['response']['categories']:
-							catIDs = [c['id'] for c in cat['categories']]
-							for i in xrange(len(catIDs)):
-								if catIDs[i]==categoryID:
-									mainCat['id'] = cat['id']
-									mainCat['name'] = cat['name']
-									break
+							catString = json.dumps(cat,  indent=4, sort_keys=True)
+							if categoryID in catString:
+								mainCat['id'] = cat['id']
+								mainCat['name'] = cat['name']
+								break
+							# catIDs = [c['id'] for c in cat['categories']]
+							# for i in xrange(len(catIDs)):
+							# 	if catIDs[i]==categoryID:
+							# 		mainCat['id'] = cat['id']
+							# 		mainCat['name'] = cat['name']
+							# 		
 						if 'name' not in mainCat.keys():
-							# print categoryID, ' did not found category :( , place: ', place['properties']['name']
+							print categoryID, ' did not found category :( , place: ', place['properties']['name']
 							mainCat['name'] = None
 
 						# venueStats['MainID'] = mainCat['id']
