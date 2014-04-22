@@ -17,13 +17,15 @@ import cProfile
  cities = done
  venueStats - done
  вытащить 4sqr в allFeats из функций (упростить) - done
+ заменить URL requests??
+
  в категориях и суммации - генераторы
- 
  summation - починить и упростить
+ profiler
  filter bad movements
  more filters_collectors - для "опозданий на работу, например"
- optimise placessummarisation
- profiler
+ 
+ personal_analytics
  define sleeping
  define workPlace
  define weekend_Place
@@ -42,10 +44,10 @@ def getAcces():
 
 
 frsqrAcess1= getAcces()
-version = 4
+# version = 4
 
 def collectData(person, Type, frsqrAcess):
-	version = 4
+	version = 5
 	def parseJsonToString(j):
 		# print j
 		data = json.loads(j)[0]
@@ -136,7 +138,7 @@ def collectData(person, Type, frsqrAcess):
 			temp = parseMoves(story[ps])
 			if temp!=None:
 				allFeats.extend(temp)
-
+		print 'Всего перемещений: ', len(allFeats)
 		return allFeats
 
 	def totalPlaces(List, person, frsqrAcess):
@@ -152,16 +154,22 @@ def collectData(person, Type, frsqrAcess):
 					catJson = json.loads(Answer)
 					print 'all cats scraped from 4sqr site!'
 
-					# return catJson
+					catStrings = {}
+					for cat in catJson['response']['categories']:
+						catStrings[cat['name']] = json.dumps(cat,  indent=4 )
+						# print cat['name'], ':::', catStrings[cat['name']]
 
-					def frsqrStat(place, acces_tocken, catJson):
+					# return catJson
+					for key in catStrings.keys():
+						print key
+
+					def frsqrStat(place, acces_tocken, catStrings):
 						ID = place['properties']['foursquareId']
 						url = 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s&v=20140416' % (ID, acces_tocken)
 						fsqrResponse = urllib2.urlopen(url)
 						Answer = fsqrResponse.read()
 						venueJson = json.loads(Answer)
-
-						# venueStats = {}
+						
 						try:
 							place['properties']['city'] = venueJson['response']['venue']['location']['city']
 							
@@ -180,34 +188,23 @@ def collectData(person, Type, frsqrAcess):
 							place['properties']['state'] = None
 
 						categoryID = venueJson['response']['venue']['categories'][0]['id']
-						place['properties']['categoryName'] = venueJson['response']['venue']['categories'][0]['name']
+						place['properties']['categoryName'] = venueJson['response']['venue']['categories'][0]['name']		
 
-						mainCat = {}
-						#  if basic ID
-						for cat in catJson['response']['categories']:
-							if cat['id']==categoryID:
-								mainCat['id']=categoryID
-								mainCat['name']=cat['name']
-								return mainCat	
-						# if not basic (general)
-						for cat in catJson['response']['categories']:
-							catString = json.dumps(cat,  indent=4, sort_keys=True)
-							if categoryID in catString:
-								mainCat['id'] = cat['id']
-								mainCat['name'] = cat['name']
-								break
-							# catIDs = [c['id'] for c in cat['categories']]
-							# for i in xrange(len(catIDs)):
-							# 	if catIDs[i]==categoryID:
-							# 		mainCat['id'] = cat['id']
-							# 		mainCat['name'] = cat['name']
-							# 		
-						if 'name' not in mainCat.keys():
-							print categoryID, ' did not found category :( , place: ', place['properties']['name']
-							mainCat['name'] = None
+						def defMainCat(categoryID, catStrings):
+							mainCat = None
 
-						# venueStats['MainID'] = mainCat['id']
-						place['properties']['MainName'] = mainCat['name']
+							for key in catStrings.keys():
+								if categoryID in catStrings[key]:
+									mainCat = key
+									break
+
+							if mainCat==None:
+								print categoryID, ' did not found category :('
+
+							return mainCat
+							 		
+						
+						place['properties']['MainName'] = defMainCat(categoryID,catStrings)
 
 						return place
 
@@ -217,93 +214,82 @@ def collectData(person, Type, frsqrAcess):
 					return List
 
 
-		def parsePlaces(j):
-			# print j
-			
+		def parsePlaces(j, pList):
+			# print len(pList)
+			idList = [x['properties']['id'] for x in pList]
+
+
 			data = json.loads(j)[0]
 			date = data['date']
 			movements = data['segments']
-			feats = []
 
 			if movements == None:
 				# print 'lazy Day!'
 				# pp.pprint(data)
-				return
+				pass
 			else:	
 				for m in movements:
 					if m['type']=='place':
 
-						try: 
-							foursquareId = m['place']['foursquareId']
-						except:
-							foursquareId = None
+						ID = m['place']['id']
+						if ID not in idList:
 
 
-						try: 
-							name = m['place']['name']
-						except:
-							name = 'unknown'
+							try: 
+								foursquareId = m['place']['foursquareId']
+							except:
+								foursquareId = None
+
+
+							try: 
+								name = m['place']['name']
+							except:
+								name = 'unknown'
 						
 
 
-						prop = {
-							# 'date': [date],
-							'type': 'place',
-							'id' : m['place']['id'],
-							'foursquareId' : foursquareId,
-							'pType' : m['place']['type'],
-							'name' : name,
+							prop = {
+								# 'date': [date],
+								'type': 'place',
+								'id' : m['place']['id'],
+								'foursquareId' : foursquareId,
+								'pType' : m['place']['type'],
+								'name' : name,
 
-							# 'amoung' : 1
+								'amoung' : 1
 							# 'duration' : (int(m['endTime'])-int(m['startTime'])),
 							# 'endTime' : m['endTime'],
 							# 'startTime' : m['startTime']
-							}
-
-
-						# print prop['name']
+								}
+							# print prop['name']
 						
-						lat =  m['place']['location']['lat']
-						lon =  m['place']['location']['lon']
-						Location = [lon, lat]
+							lat =  m['place']['location']['lat']
+							lon =  m['place']['location']['lon']
+							Location = [lon, lat]
 
-						Feature={
-							'type': 'Feature',
-							'geometry': {
-		        				'type': 'Point',
-		        				'coordinates': Location
-		    				},
-		    				'properties': prop #'n/a'#
-		    				}	
-					
-						feats.append(Feature)	
-			return feats
+							Feature={
+								'type': 'Feature',
+								'geometry': {
+		        					'type': 'Point',
+		        					'coordinates': Location
+		    					},
+		    					'properties': prop #'n/a'#
+		    					}	
+							pList.append(Feature)	
+							idList.append(ID)
+						else:
+							pList[idList.index(ID)]['properties']['amoung']+=1
+
+			return pList
 
 		allFeats = []
-		# rows.append('distance|trackPoints|startTime|duration|endTime|date|type\n')
 		for story in List:
-			temp = parsePlaces(story[ps])
-			if temp!=None:
-				allFeats.extend(temp)
-		#  summarising amoung of visits
-		tempP = {}
-		tempFeats = []
+			allFeats = parsePlaces( story[ps], allFeats)
+		
 
-		for place in allFeats:
-			placeID = '|'.join([place['properties']['name'], str(place['geometry']['coordinates'][0]), str(place['geometry']['coordinates'][1])])
-			if placeID not in tempP.keys():
-				tempP[placeID]=1 
-				tempFeats.append(place)
-			else:
-				tempP[placeID]+=1
-
-		for place in tempFeats:
-			placeID = '|'.join([place['properties']['name'], str(place['geometry']['coordinates'][0]), str(place['geometry']['coordinates'][1])])
-			place['properties']['amoung'] = tempP[placeID]
-
+		#  getting data from 4sqr
 		allFeats = frsqrStatAll(allFeats, frsqrAcess)
-
-
+		print 'Всего мест: ',len(allFeats)
 		return allFeats
 
 	def verifyGeoJson(Json):
@@ -348,4 +334,6 @@ def collectData(person, Type, frsqrAcess):
     		file.close()
     		print 'file ' + out_path.split('/')[-1] +  ' written!'
 
-collectData('philipp', 'places', frsqrAcess1)
+
+cProfile.run("collectData('philipp', 'places', frsqrAcess1)")
+# collectData('philipp', 'places', frsqrAcess1)
