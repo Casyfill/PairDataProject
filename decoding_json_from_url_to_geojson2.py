@@ -290,10 +290,7 @@ def collectData(person, Type, frsqrAcess):
 		print 'Всего мест: ',len(allFeats)
 		return allFeats
 
-	def verifyGeoJson(Json):
-		validate_endpoint = 'http://geojsonlint.com/validate'
-		request = requests.post(validate_endpoint, data=Json)
-		return request.json()
+	
 
 
 	if person == 'anna':
@@ -319,17 +316,24 @@ def collectData(person, Type, frsqrAcess):
 	    'features': result,
 	}
 
-	geo_str = json.dumps(features,  indent=4, sort_keys=True)
-	# pp.pprint(geo_str)
+	def saveGeoJson(features, out_path):
+		
+		def verifyGeoJson(Json):
+			validate_endpoint = 'http://geojsonlint.com/validate'
+			request = requests.post(validate_endpoint, data=Json)
+			return request.json()		
+		
+		geo_str = json.dumps(features,  indent=4)
 
-	if verifyGeoJson(geo_str)['status']!='ok':
-		print verifyGeoJson(geo_str)
-	else:
-		with open(out_path, 'w') as file:
-			file.writelines(geo_str)
-    		file.close()
-    		print 'file ' + out_path.split('/')[-1] +  ' written!'
+		if verifyGeoJson(geo_str)['status']!='ok':
+			print verifyGeoJson(geo_str)
+		else:
+			with open(out_path, 'w') as file:
+				file.writelines(geo_str)
+    			file.close()
+    			print 'file ' + out_path.split('/')[-1] +  ' written!'
 
+    # saveGeoJson(features,url)
 
 cProfile.run("collectData('philipp', 'places', frsqrAcess1)")
 # collectData('philipp', 'places', frsqrAcess1)
