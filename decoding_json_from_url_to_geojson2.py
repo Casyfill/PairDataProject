@@ -1,27 +1,12 @@
 #!/usr/local/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib2
-import json
-import csv
-# import pprint
-# pp = pprint.PrettyPrinter(indent=4)
-import sys
 import cProfile
-# cProfile.run('foo()')
+import requests
+
 
 '''
- суммировать точки!!!! - done
- все в def's - done
- 4sqr_places_stats - done
- cities = done
- venueStats - done
- вытащить 4sqr в allFeats из функций (упростить) - done
- заменить URL requests??
-
- в категориях и суммации - генераторы
- summation - починить и упростить
- profiler
+ 
  filter bad movements
  more filters_collectors - для "опозданий на работу, например"
  
@@ -33,6 +18,7 @@ import cProfile
  define favorite
  define favoriteFood
 
+ proceed local places DB
 '''
 # чтобы не светить пароли в гите
 def getAcces():
@@ -149,26 +135,38 @@ def collectData(person, Type, frsqrAcess):
 
 		def frsqrStatAll(List, acces_tocken):
 					url = 'https://api.foursquare.com/v2/venues/categories?oauth_token=%s&v=20140416' % (acces_tocken)
-					catResponse = urllib2.urlopen(url)
-					Answer = catResponse.read()
-					catJson = json.loads(Answer)
+					catResponse = requests.get(url)
+					catJson = catResponse.json()
 					print 'all cats scraped from 4sqr site!'
-
+					# pp.pprint(catJson) 
+					def get_all(myjson, key, result):
+						if type(myjson) == str:
+							myjson = json.loads(myjson)
+							pass
+						if type(myjson) is dict:
+							for jsonkey in myjson:
+								if type(myjson[jsonkey]) in (list, dict):
+									get_all(myjson[jsonkey], key,result)
+								elif jsonkey == key:
+									result.append(myjson[jsonkey])
+						elif type(myjson) is list:
+							for item in myjson:
+								if type(item) in (list, dict):
+									get_all(item, key, result)
 					catStrings = {}
 					for cat in catJson['response']['categories']:
-						catStrings[cat['name']] = json.dumps(cat,  indent=4 )
-						# print cat['name'], ':::', catStrings[cat['name']]
-
-					# return catJson
-					for key in catStrings.keys():
-						print key
+						catStrings[cat['name']] = []
+						get_all(cat, 'id', catStrings[cat['name']] )				
+	
 
 					def frsqrStat(place, acces_tocken, catStrings):
 						ID = place['properties']['foursquareId']
 						url = 'https://api.foursquare.com/v2/venues/%s?oauth_token=%s&v=20140416' % (ID, acces_tocken)
-						fsqrResponse = urllib2.urlopen(url)
-						Answer = fsqrResponse.read()
-						venueJson = json.loads(Answer)
+						fsqrResponse = requests.get(url)
+						# Answer = fsqrResponse.read()
+						# venueJson = json.loads(Answer)
+						venueJson = fsqrResponse.json()
+						# print venueJson
 						
 						try:
 							place['properties']['city'] = venueJson['response']['venue']['location']['city']
@@ -210,7 +208,7 @@ def collectData(person, Type, frsqrAcess):
 
 					for place in List:
 						if place['properties']['foursquareId']!=None:
-							place = frsqrStat(place, acces_tocken, catJson)
+							place = frsqrStat(place, acces_tocken, catStrings)
 					return List
 
 
@@ -293,7 +291,6 @@ def collectData(person, Type, frsqrAcess):
 		return allFeats
 
 	def verifyGeoJson(Json):
-		import requests
 		validate_endpoint = 'http://geojsonlint.com/validate'
 		request = requests.post(validate_endpoint, data=Json)
 		return request.json()
@@ -307,9 +304,8 @@ def collectData(person, Type, frsqrAcess):
 
 	print 'script started!'
 
-	response = urllib2.urlopen(url)
-	Answer = response.read()
-	d = json.loads(Answer)
+	response = requests.get(url)
+	d = response.json()
 	print 'parsing - done'
 	# pp.pprint(json.loads(d[0]['PhilippStoryString']))
 
