@@ -28,12 +28,10 @@ def getAcces():
 		return frsqrAcess
 		file.close()
 
-
-frsqrAcess1= getAcces()
-# version = 4
+frsqrAcess= getAcces()
 
 def collectData(person, Type, frsqrAcess):
-	version = 5
+	version = 6
 	def parseJsonToString(j):
 		# print j
 		data = json.loads(j)[0]
@@ -253,8 +251,8 @@ def collectData(person, Type, frsqrAcess):
 								'foursquareId' : foursquareId,
 								'pType' : m['place']['type'],
 								'name' : name,
-
-								'amoung' : 1
+								'amoung' : 1,
+								'firstDate': date
 							# 'duration' : (int(m['endTime'])-int(m['startTime'])),
 							# 'endTime' : m['endTime'],
 							# 'startTime' : m['startTime']
@@ -280,6 +278,8 @@ def collectData(person, Type, frsqrAcess):
 
 			return pList
 
+
+		
 		allFeats = []
 		for story in List:
 			allFeats = parsePlaces( story[ps], allFeats)
@@ -288,6 +288,20 @@ def collectData(person, Type, frsqrAcess):
 		#  getting data from 4sqr
 		allFeats = frsqrStatAll(allFeats, frsqrAcess)
 		print 'Всего мест: ',len(allFeats)
+
+		# статистика сколько новых мест в день
+		def placeStats(allFeats):
+			stats = {}
+			for feat in allFeats:
+				if feat['properties']['firstDate'] not in stats:
+					stats[feat['properties']['firstDate']]=1
+				else:
+					stats[feat['properties']['firstDate']+=1
+			for date in stats:
+				print date, ':', stats[date]
+
+		placeStats(allFeats)
+
 		return allFeats
 
 	
