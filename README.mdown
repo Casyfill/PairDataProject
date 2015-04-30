@@ -21,4 +21,4 @@ Also, I use python 2.7, json and geojson modules to process data manually export
 - [Moves App](https://www.moves-app.com/)
 - [Moves API](https://dev.moves-app.com/)
 - [GeoJson Lint](http://geojsonlint.com/) - online geojson validation tool
-- [CartoDB](cartodb.com)- online mapping service
+- [CartoDB](cartodb.com) - online mapping service
