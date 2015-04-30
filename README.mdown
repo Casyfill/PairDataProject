@@ -1,0 +1,24 @@
+Visualising spatial Behaviour 
+=============================
+###using Moves app
+
+this is a personal project on visualisation and analysis of
+personal spatial behaviour using Moves app.
+
+an current moment I use cartoDB service to visualise data.
+Also, I use python 2.7, json and geojson modules to process data manually exported data. There is also an old code for aoutomated data collecting.
+
+###Here are ongoing todos for the project:
+- update all the places with their foursquare category, intepreted
+- calculate the total time of being and scheldure of visiting different places and categories
+- refine ordinal patterns of overday and week behaviour, probability and variability of place sequences
+- refine error and bad trackers (long narrow lines, obviously incorrect)
+- calculate deviation (veriability) of route times, and season corellation.
+- Moves recognize the type of movements: running, cycling, riding a car, walking around, etc. So I can add those stats also.
+- Visualise this data and add it to the map, or as a separate project.
+
+###References
+- [Moves App](https://www.moves-app.com/)
+- [Moves API](https://dev.moves-app.com/)
+- [GeoJson Lint](http://geojsonlint.com/) - online geojson validation tool
+- [CartoDB](cartodb.com)- online mapping service
