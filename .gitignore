@@ -2,3 +2,7 @@
 4sqr_access_token.txt
 
 4sqr_tag
+
+*.geojson
+
+*.json
